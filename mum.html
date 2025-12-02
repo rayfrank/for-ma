@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>For Ma 💖</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                sans-serif;
+            background: radial-gradient(circle at top, #ffdde1 0%, #ee9ca7 40%, #120321 100%);
+            color: #fff;
+        }
+
+        #bg {
+            position: fixed;
+            inset: 0;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.5rem;
+            pointer-events: none;
+        }
+
+        .card {
+            max-width: 520px;
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 24px;
+            padding: 2rem 2.5rem;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glow-ring {
+            position: absolute;
+            width: 220%;
+            height: 220%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 60%);
+            top: -60%;
+            left: -60%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease-out;
+        }
+
+        .glow-ring.active {
+            opacity: 1;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 0.6rem;
+            line-height: 1.1;
+        }
+
+        h1 span {
+            background: linear-gradient(120deg, #ff9a9e, #fad0c4, #fbc2eb);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        #message {
+            min-height: 3.5rem;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            opacity: 0.94;
+            margin: 0.7rem 0 1.2rem 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #message.hidden {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        .signature {
+            font-size: 1rem;
+            font-style: italic;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .signature.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        button {
+            margin-top: 0.6rem;
+            padding: 0.7rem 1.6rem;
+            border-radius: 999px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            color: #3b0035;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        button:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        .small-note {
+            margin-top: 0.9rem;
+            font-size: 0.84rem;
+            opacity: 0.78;
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                padding: 1.4rem 1.6rem;
+                border-radius: 20px;
+            }
+
+            h1 {
+                font-size: 1.9rem;
+            }
+
+            #message {
+                font-size: 0.98rem;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="bg"></canvas>
+
+    <div class="overlay">
+        <div class="card">
+            <div class="glow-ring" id="glow"></div>
+            <h1>For my <span>amazing Ma</span> 💕</h1>
+            <p id="message" class="hidden"></p>
+
+            <div class="signature" id="signature">
+                With all my love,<br />
+                <strong>Ray 💖</strong>
+            </div>
+
+            <button id="revealBtn">Click to reveal a secret message ✨</button>
+            <div class="small-note">
+                Keep clicking to see what’s in my heart. You can also move your mouse or tilt your phone to play with
+                the hearts. 💗
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====== THREE.JS BACKGROUND ======
+        const canvas = document.getElementById("bg");
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(
+            45,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            100
+        );
+        camera.position.set(0, 1.2, 7);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffb6c1, 1.1);
+        dirLight.position.set(4, 8, 5);
+        scene.add(dirLight);
+
+        function createHeartGeometry() {
+            const x = 0, y = 0;
+            const heartShape = new THREE.Shape();
+
+            heartShape.moveTo(x, y);
+            heartShape.bezierCurveTo(x, y - 0.5, x - 1.2, y - 0.5, x - 1.2, y + 0.2);
+            heartShape.bezierCurveTo(x - 1.2, y + 0.9, x - 0.3, y + 1.4, x, y + 1.8);
+            heartShape.bezierCurveTo(x + 0.3, y + 1.4, x + 1.2, y + 0.9, x + 1.2, y + 0.2);
+            heartShape.bezierCurveTo(x + 1.2, y - 0.5, x, y - 0.5, x, y);
+
+            const geometry = new THREE.ExtrudeGeometry(heartShape, {
+                depth: 0.25,
+                bevelEnabled: true,
+                bevelSegments: 2,
+                steps: 1,
+                bevelSize: 0.07,
+                bevelThickness: 0.07
+            });
+
+            geometry.center();
+            return geometry;
+        }
+
+        const heartGeometry = createHeartGeometry();
+        const hearts = [];
+        const heartCount = 40;
+        const heartColors = [0xff9a9e, 0xfad0c4, 0xfbc2eb, 0xffdde1];
+
+        for (let i = 0; i < heartCount; i++) {
+            const color = heartColors[Math.floor(Math.random() * heartColors.length)];
+            const material = new THREE.MeshStandardMaterial({
+                color,
+                metalness: 0.1,
+                roughness: 0.3
+            });
+
+            const heart = new THREE.Mesh(heartGeometry, material);
+
+            heart.position.set(
+                (Math.random() - 0.5) * 14,
+                (Math.random() - 0.5) * 8,
+                (Math.random() - 0.5) * 10
+            );
+
+            const s = 0.25 + Math.random() * 0.5;
+            heart.scale.set(s, s, s);
+
+            heart.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+
+            heart.userData = {
+                baseY: heart.position.y,
+                floatSpeed: 0.4 + Math.random() * 0.6,
+                rotateSpeed: 0.4 + Math.random() * 0.8,
+                pulseScale: 1
+            };
+
+            scene.add(heart);
+            hearts.push(heart);
+        }
+
+        let targetRotX = 0;
+        let targetRotY = 0;
+
+        function onPointerMove(e) {
+            const x = (e.clientX / window.innerWidth) * 2 - 1;
+            const y = (e.clientY / window.innerHeight) * 2 - 1;
+            targetRotY = x * 0.3;
+            targetRotX = y * 0.3;
+        }
+
+        window.addEventListener("pointermove", onPointerMove);
+
+        window.addEventListener("deviceorientation", (event) => {
+            if (event.beta === null || event.gamma === null) return;
+            const x = event.gamma / 45;
+            const y = event.beta / 45;
+            targetRotY = x * 0.2;
+            targetRotX = y * 0.2;
+        }, true);
+
+        window.addEventListener("resize", () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            renderer.setSize(w, h);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        });
+
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            camera.position.x += (targetRotY * 5 - camera.position.x) * 0.03;
+            camera.position.y += (1.2 - targetRotX * 2 - camera.position.y) * 0.03;
+            camera.lookAt(0, 0, 0);
+
+            hearts.forEach((heart, index) => {
+                const data = heart.userData;
+                heart.position.y =
+                    data.baseY + Math.sin(t * data.floatSpeed + index) * 0.6;
+
+                const pulse = 1 + (data.pulseScale - 1) * 0.6;
+                heart.scale.setScalar(pulse * (0.25 + index * 0.0)); // keep individual scale
+
+                heart.rotation.y += 0.01 * data.rotateSpeed;
+                heart.rotation.x += 0.005 * data.rotateSpeed;
+
+                // slowly relax pulseScale back to 1
+                data.pulseScale += (1 - data.pulseScale) * 0.05;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // ====== MESSAGE REVEAL LOGIC ======
+        const messageEl = document.getElementById("message");
+        const signatureEl = document.getElementById("signature");
+        const revealBtn = document.getElementById("revealBtn");
+        const glowRing = document.getElementById("glow");
+
+        const lines = [
+            "Ma, I made this little page just for you. 💌",
+            "I want you to know that I love you so, so much.",
+            "Thank you for every sacrifice, every prayer, every hug and every smile.",
+            "You are my hero, my safe place and my biggest blessing."
+        ];
+
+        let currentIndex = 0;
+        let isAnimating = false;
+
+        function pulseHearts() {
+            hearts.forEach((heart) => {
+                heart.userData.pulseScale = 1.5;
+            });
+            glowRing.classList.add("active");
+            setTimeout(() => glowRing.classList.remove("active"), 400);
+        }
+
+        function revealNextLine() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            pulseHearts();
+
+            messageEl.classList.add("hidden");
+
+            setTimeout(() => {
+                if (currentIndex < lines.length) {
+                    messageEl.textContent = lines[currentIndex];
+                    currentIndex++;
+
+                    if (currentIndex === lines.length) {
+                        revealBtn.textContent = "One last thing… 💖";
+                    } else {
+                        revealBtn.textContent = "Click again ✨";
+                    }
+
+                    messageEl.classList.remove("hidden");
+                    isAnimating = false;
+                } else {
+                    // Show signature and hide button
+                    messageEl.textContent = "Ma, I love you more than words can say. ❤️";
+                    messageEl.classList.remove("hidden");
+                    signatureEl.classList.add("visible");
+                    revealBtn.style.opacity = "0";
+                    setTimeout(() => {
+                        revealBtn.style.display = "none";
+                    }, 300);
+                    isAnimating = false;
+                }
+            }, 220);
+        }
+
+        revealBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            revealNextLine();
+        });
+    </script>
+</body>
+
+</html>
